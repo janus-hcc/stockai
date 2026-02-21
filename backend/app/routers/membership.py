@@ -153,7 +153,7 @@ async def admin_list_users(user: dict = Depends(get_current_user)):
     for u in users:
         u["_id"] = str(u["_id"])
         if u.get("created_at"):
-            a["created_at"] = str(u["created_at"])[:10]("%Y-%m-%d")
+            a["created_at"] = str(u["created_at"])[:10]
     
     return {"success": True, "data": users}
 
@@ -206,7 +206,7 @@ async def admin_list_users(user: dict = Depends(get_current_user), page: int = 1
     for u in users:
         u["_id"] = str(u["_id"])
         if u.get("created_at"):
-            a["created_at"] = str(u["created_at"])[:10]("%Y-%m-%d")
+            a["created_at"] = str(u["created_at"])[:10]
     
     return {
         "success": True,
@@ -278,7 +278,7 @@ async def admin_list_articles(user: dict = Depends(get_current_user), page: int 
     for a in articles:
         a["_id"] = str(a["_id"])
         if a.get("created_at"):
-            a["created_at"] = str(a["created_at"])[:10]("%Y-%m-%d")
+            a["created_at"] = str(a["created_at"])[:10]
     
     return {
         "success": True,
