@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>StockAI - AI股票分析</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+        }
+        .login-title {
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 24px;
+            color: #333;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        #loginMsg {
+            text-align: center;
+            margin-top: 16px;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2 class="login-title">📈 StockAI 登录</h2>
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="username" value="testuser">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="password" value="test123">
+        </div>
+        <button class="btn" id="loginBtn">登录</button>
+        <p id="loginMsg"></p>
+    </div>
+
+    <script>
+        var API = 'http://127.0.0.1:8001';
+        var token = localStorage.getItem('token') || '';
+        
+        document.getElementById('loginBtn').onclick = function() {
+            var u = document.getElementById('username').value;
+            var p = document.getElementById('password').value;
+            var msg = document.getElementById('loginMsg');
+            msg.textContent = '登录中...';
+            msg.style.color = '#333';
+            
+            fetch(API + '/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    token = data.data.access_token;
+                    localStorage.setItem('token', token);
+                    msg.textContent = '登录成功！正在跳转...';
+                    msg.style.color = '#27ae60';
+                    setTimeout(function() {
+                        window.location.href = '/success.html';
+                    }, 1000);
+                } else {
+                    msg.textContent = '登录失败: ' + (data.detail || '');
+                }
+            })
+            .catch(function(e) {
+                msg.textContent = '登录出错: ' + e;
+            });
+        };
+    </script>
+</body>
+</html>

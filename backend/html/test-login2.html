@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>StockAI - 简单登录</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        input { padding: 10px; margin: 5px; width: 200px; }
+        button { padding: 10px 30px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+    <h2>StockAI 登录</h2>
+    用户名: <input id="username" value="testuser"><br>
+    密码: <input id="password" value="test123" type="password"><br><br>
+    <button id="loginBtn">登录</button>
+    <p id="msg"></p>
+    
+    <script>
+        var API = 'http://127.0.0.1:8001';
+        
+        document.getElementById('loginBtn').onclick = function() {
+            var u = document.getElementById('username').value;
+            var p = document.getElementById('password').value;
+            var msg = document.getElementById('msg');
+            msg.textContent = '正在登录...';
+            
+            fetch(API + '/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    localStorage.setItem('token', data.data.access_token);
+                    msg.textContent = '登录成功！Token: ' + data.data.access_token.substring(0, 20) + '...';
+                } else {
+                    msg.textContent = '登录失败: ' + JSON.stringify(data);
+                }
+            })
+            .catch(function(e) {
+                msg.textContent = '错误: ' + e;
+            });
+        };
+    </script>
+</body>
+</html>

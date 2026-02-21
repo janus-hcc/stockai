@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>StockAI - AI股票分析</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f7fa; min-height: 100vh; }
+        .hidden { display: none; }
+        
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2); }
+        .login-card { background: white; padding: 40px; border-radius: 16px; width: 400px; }
+        .login-title { text-align: center; margin-bottom: 32px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #666; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        .btn { width: 100%; padding: 14px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .header { background: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #667eea; }
+        .nav button { padding: 10px 20px; border: none; background: transparent; color: #666; cursor: pointer; border-radius: 8px; margin-left: 8px; }
+        .nav button.active { background: #667eea; color: white; }
+        
+        .main { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+        
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-label { color: #999; margin-bottom: 8px; }
+        .stat-value { font-size: 24px; font-weight: bold; }
+        
+        .card { background: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+        .card-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+        
+        .search-box { display: flex; gap: 12px; margin-bottom: 16px; }
+        .search-input { flex: 1; padding: 14px; border: 1px solid #ddd; border-radius: 8px; }
+        
+        .quote-card { background: linear-gradient(135deg, #667eea, #764ba2); padding: 24px; border-radius: 12px; color: white; text-align: center; margin-bottom: 20px; }
+        .quote-name { font-size: 20px; margin-bottom: 8px; }
+        .quote-price { font-size: 36px; font-weight: bold; }
+        
+        .result-box { background: #f8f9fa; padding: 20px; border-radius: 8px; white-space: pre-wrap; max-height: 600px; overflow-y: auto; }
+        
+        .membership-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tier-card { padding: 24px; border-radius: 12px; text-align: center; border: 2px solid #eee; }
+        .tier-name { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+        .tier-price { font-size: 28px; color: #667eea; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <!-- Login -->
+    <div id="loginPage">
+        <div class="login-container">
+            <div class="login-card">
+                <h2 class="login-title">📈 StockAI 登录</h2>
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="username" value="testuser">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="password" value="test123">
+                </div>
+                <button type="button" class="btn" onclick="doLogin()">登录</button>
+                <p id="loginMsg" style="text-align:center;margin-top:12px;color:red"></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main -->
+    <div id="mainPage" class="hidden">
+        <div class="header">
+            <div class="logo">📈 StockAI</div>
+            <div class="nav">
+                <button class="active" onclick="showPage('analyze')">股票分析</button>
+                <button onclick="showPage('history')">历史</button>
+                <button onclick="showPage('membership')">会员</button>
+                <button onclick="showPage('admin')">管理</button>
+                <button onclick="window.open('https://www.quantagent.cc/','_blank')">关于我们</button>
+                <button onclick="logout()">退出</button>
+            </div>
+        </div>
+        
+        <div class="main">
+            <!-- Analyze -->
+            <div id="page-analyze">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-label">会员等级</div>
+                        <div class="stat-value" id="memberLevel">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">今日已用</div>
+                        <div class="stat-value" id="usedToday">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">剩余次数</div>
+                        <div class="stat-value" id="remaining">-</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">🔍 AI 股票分析</div>
+                    <div class="search-box">
+                        <input class="search-input" id="stockInput" placeholder="输入股票代码，如 000001、600519">
+                        <button class="btn" style="width:auto;padding:12px 24px" onclick="analyze()">开始分析</button>
+                    </div>
+                    <p style="color:#666;margin-bottom:16px">💡 AI辅助八维度分析，等待约3分钟</p>
+                    
+                    <div id="quoteBox" class="quote-card hidden">
+                        <div class="quote-name" id="quoteName">-</div>
+                        <div class="quote-price" id="quotePrice">¥-</div>
+                    </div>
+                    
+                    <div id="resultBox" class="result-box hidden"></div>
+                </div>
+                
+                <!-- 科技产业蓝皮书 -->
+                <div class="card">
+                    <div class="card-title">📚 科技产业蓝皮书</div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+                        <div style="background:#1a5fb4;padding:24px;border-radius:12px;color:white;text-align:center;cursor:pointer" onclick="window.open('https://www.quantagent.cc','_blank')">
+                            <div style="font-size:32px">💻</div>
+                            <div style="font-weight:bold">半导体</div>
+                        </div>
+                        <div style="background:#9141ac;padding:24px;border-radius:12px;color:white;text-align:center;cursor:pointer" onclick="window.open('https://www.quantagent.cc','_blank')">
+                            <div style="font-size:32px">🤖</div>
+                            <div style="font-weight:bold">人工智能</div>
+                        </div>
+                        <div style="background:#e01b24;padding:24px;border-radius:12px;color:white;text-align:center;cursor:pointer" onclick="window.open('https://www.quantagent.cc','_blank')">
+                            <div style="font-size:32px">🦾</div>
+                            <div style="font-weight:bold">机器人</div>
+                        </div>
+                        <div style="background:#e67e22;padding:24px;border-radius:12px;color:white;text-align:center;cursor:pointer" onclick="window.open('https://www.quantagent.cc','_blank')">
+                            <div style="font-size:32px">⚡</div>
+                            <div style="font-weight:bold">能源革命</div>
+                        </div>
+                        <div style="background:#27ae60;padding:24px;border-radius:12px;color:white;text-align:center;cursor:pointer" onclick="window.open('https://www.quantagent.cc','_blank')">
+                            <div style="font-size:32px">🚗</div>
+                            <div style="font-weight:bold">智能汽车</div>
+                        </div>
+                        <div style="background:#3498db;padding:24px;border-radius:12px;color:white;text-align:center;cursor:pointer" onclick="window.open('https://www.quantagent.cc','_blank')">
+                            <div style="font-size:32px">🏥</div>
+                            <div style="font-weight:bold">智慧医疗</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- History -->
+            <div id="page-history" class="hidden">
+                <div class="card">
+                    <div class="card-title">📜 分析历史</div>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+            
+            <!-- Membership -->
+            <div id="page-membership" class="hidden">
+                <div class="card">
+                    <div class="card-title">💎 会员中心</div>
+                    <div class="stats" style="margin-bottom:32px">
+                        <div class="stat-card">
+                            <div class="stat-label">当前等级</div>
+                            <div class="stat-value" id="mLevel">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">今日已用</div>
+                            <div class="stat-value" id="mUsed">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">到期时间</div>
+                            <div class="stat-value" id="mExpire">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="membership-tiers">
+                        <div class="tier-card">
+                            <div class="tier-name">免费用户</div>
+                            <div class="tier-price">¥0</div>
+                            <div>3次/天</div>
+                        </div>
+                        <div class="tier-card">
+                            <div class="tier-name">黄金会员</div>
+                            <div class="tier-price">¥99/月</div>
+                            <div>无限次</div>
+                        </div>
+                        <div class="tier-card">
+                            <div class="tier-name">SVIP会员</div>
+                            <div class="tier-price">¥299/月</div>
+                            <div>无限+优先</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        var API = 'http://127.0.0.1:8001';
+        console.log('Page loaded, API:', API);
+        var token = localStorage.getItem('token') || '';
+        
+        function doLogin() {
+            console.log('Login clicked, API:', API);
+            event.preventDefault();
+            event.stopPropagation();
+            alert('开始登录, API=' + API);
+            var u = document.getElementById('username').value;
+            var p = document.getElementById('password').value;
+            var msg = document.getElementById('loginMsg');
+            msg.textContent = '登录中...';
+            alert('发送请求到: ' + API + '/api/auth/login');
+            
+            fetch(API + '/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    token = data.data.access_token;
+                    localStorage.setItem('token', token);
+                    showMain();
+                } else {
+                    msg.textContent = '登录失败: ' + (data.detail || '');
+                }
+            })
+            .catch(function(e) {
+                msg.textContent = '登录出错: ' + e;
+            });
+        }
+        
+        function showMain() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('mainPage').classList.remove('hidden');
+            loadMembership();
+        }
+        
+        function logout() {
+            token = '';
+            localStorage.removeItem('token');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('mainPage').classList.add('hidden');
+        }
+        
+        function loadMembership() {
+            fetch(API + '/api/membership/info', {
+                headers: {'Authorization': 'Bearer ' + token}
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    var m = data.data;
+                    var levelNames = {'free':'免费用户','gold':'黄金会员','svip':'SVIP会员'};
+                    var level = levelNames[m.level] || m.level;
+                    document.getElementById('memberLevel').textContent = level;
+                    document.getElementById('mLevel').textContent = level;
+                    document.getElementById('mUsed').textContent = m.used_today + ' 次';
+                    document.getElementById('mExpire').textContent = m.expire_at ? m.expire_at.substring(0,10) : '永久';
+                    var limit = m.daily_limit === -1 ? '无限' : m.daily_limit;
+                    document.getElementById('usedToday').textContent = m.used_today + ' / ' + limit;
+                    document.getElementById('remaining').textContent = m.daily_limit === -1 ? '无限' : Math.max(0, m.daily_limit - m.used_today);
+                }
+            });
+        }
+        
+        function showPage(page) {
+            document.querySelectorAll('#page-analyze, #page-history, #page-membership, #page-admin').forEach(function(d) { d.classList.add('hidden'); });
+            document.getElementById('page-' + page).classList.remove('hidden');
+            document.querySelectorAll('.nav button').forEach(function(b) { b.classList.remove('active'); });
+            event.target.classList.add('active');
+            
+            if(page === 'history') loadHistory();
+            if(page === 'admin') { loadAdminStats(); loadAdminUsers(); }
+        }
+        
+        function analyze() {
+            var code = document.getElementById('stockInput').value.trim();
+            if(!code) return;
+            
+            var btn = document.querySelector('#page-analyze .btn');
+            btn.textContent = '请稍候...';
+            btn.disabled = true;
+            
+            document.getElementById('quoteBox').classList.remove('hidden');
+            document.getElementById('resultBox').classList.add('hidden');
+            // Stock name will be set after quote loads
+            
+                // Get quote
+            fetch(API + '/api/stocks/quote/' + code, {
+                headers: {'Authorization': 'Bearer ' + token}
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                console.log('Quote response:', data);
+                if(data.success && data.data) {
+                    var q = data.data;
+                    document.getElementById('quoteName').textContent = q.name + ' (' + q.symbol + ')';
+                    document.getElementById('quotePrice').textContent = '¥' + (q.price || '-');
+                } else {
+                    console.log('Quote failed:', data);
+                }
+                // After quote is loaded, do analysis
+                return fetch(API + '/api/analysis/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                    body: JSON.stringify({symbol: code})
+                });
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    document.getElementById('resultBox').classList.remove('hidden');
+                    document.getElementById('resultBox').textContent = data.data.analysis;
+                    loadMembership();
+                } else {
+                    alert(data.detail || '分析失败');
+                }
+            })
+            .catch(function(e) {
+                alert('请求失败: ' + e);
+            })
+            .then(function() {
+                btn.textContent = '开始分析';
+                btn.disabled = false;
+            });
+        }
+        
+        function loadHistory() {
+            fetch(API + '/api/analysis/history', {
+                headers: {'Authorization': 'Bearer ' + token}
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var list = document.getElementById('historyList');
+                if(data.success && data.data && data.data.length > 0) {
+                    list.innerHTML = data.data.map(function(h) {
+                        return '<div style="background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:bold">' + h.name + ' (' + h.symbol + ')</div><div style="color:#999;font-size:14px">' + h.created_at + '</div></div><div><button style="background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-right:8px" onclick="viewHistory(\'' + h.id + '\')">查看</button><button style="background:#52c41a;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer" onclick="downloadHistory(\'' + h.id + '\')">下载</button></div></div>';
+                    }).join('');
+                } else {
+                    list.innerHTML = '<p style="color:#999;text-align:center;padding:40px">暂无分析记录</p>';
+                }
+            });
+        }
+        
+        function viewHistory(id) { alert('查看: ' + id);
+            fetch(API + '/api/analysis/history/' + id, {
+                headers: {'Authorization': 'Bearer ' + token}
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    document.getElementById('quoteBox').classList.remove('hidden');
+                    document.getElementById('quoteName').textContent = data.data.name + ' (' + data.data.symbol + ')';
+                    document.getElementById('quotePrice').textContent = '¥' + (data.data.price || '-');
+                    document.getElementById('resultBox').classList.remove('hidden');
+                    document.getElementById('resultBox').textContent = data.data.analysis;
+                    showPage('analyze');
+                }
+            });
+        }
+        
+        function downloadHistory(id) { alert('下载: ' + id);
+            fetch(API + '/api/analysis/history/' + id, {
+                headers: {'Authorization': 'Bearer ' + token}
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    var content = '股票分析报告\n\n' + data.data.name + ' (' + data.data.symbol + ')\n' + data.data.created_at + '\n\n' + data.data.analysis;
+                    var blob = new Blob([content], {type: 'text/plain'});
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = data.data.symbol + '_analysis.txt';
+                    a.click();
+                }
+            });
+        }
+        
+        // Check if logged in
+        if(token) showMain();
+    
+        function loadAdminStats() {
+            fetch(API + '/api/membership/admin/stats', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).then(function(r) { return r.json(); })
+            .then(function(data) {
+                if(data.success) {
+                    document.getElementById('adminTotalUsers').textContent = data.data.total_users;
+                    document.getElementById('adminVipUsers').textContent = data.data.vip_users;
+                    document.getElementById('adminSvipUsers').textContent = data.data.svip_users;
+                    document.getElementById('adminAnalysesToday').textContent = data.data.analyses_today;
+                }
+            });
+        }
+        
+        function loadAdminUsers() {
+            fetch(API + '/api/membership/admin/users?limit=50', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).then(function(r) { return r.json(); })
+            .then(function(data) {
+                if(data.success && data.data.users) {
+                    var html = '<table style="width:100%;border-collapse:collapse"><tr style="background:#f5f5f5"><th style="padding:12px;text-align:left">用户</th><th style="padding:12px;text-align:left">等级</th><th style="padding:12px;text-align:left">到期</th><th style="padding:12px;text-align:left">操作</th></tr>';
+                    data.data.users.forEach(function(u) {
+                        var level = u.membership ? u.membership.level : 'free';
+                        var expire = u.membership && u.membership.expire_at ? u.membership.expire_at.substring(0,10) : '-';
+                        html += '<tr style="border-bottom:1px solid #eee"><td style="padding:12px">' + u.username + '</td><td style="padding:12px">' + level + '</td><td style="padding:12px">' + expire + '</td><td style="padding:12px"><select onchange="updateMemberLevel('' + u._id + '',this.value)" style="padding:4px"><option value="free" ' + (level=='free'?'selected':'') + '>免费</option><option value="vip" ' + (level=='vip'?'selected':'') + '>VIP</option><option value="svip" ' + (level=='svip'?'selected':'') + '>SVIP</option></select></td></tr>';
+                    });
+                    html += '</table>';
+                    document.getElementById('adminUserList').innerHTML = html;
+                }
+            });
+        }
+        
+        function updateMemberLevel(userId, level) {
+            fetch(API + '/api/membership/admin/user/' + userId + '/membership?level=' + level, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).then(function(r) { return r.json(); })
+            .then(function(data) {
+                alert(data.message || '更新成功');
+            });
+        }
+        
+        function publishArticle() {
+            var title = document.getElementById('articleTitle').value;
+            var content = document.getElementById('articleContent').value;
+            if(!title || !content) { alert('请填写标题和内容'); return; }
+            
+            fetch(API + '/api/membership/admin/article?title=' + encodeURIComponent(title) + '&content=' + encodeURIComponent(content), {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).then(function(r) { return r.json(); })
+            .then(function(data) {
+                alert(data.message || '发布成功');
+                document.getElementById('articleTitle').value = '';
+                document.getElementById('articleContent').value = '';
+            });
+        }
+</script>
+</body>
+</html>

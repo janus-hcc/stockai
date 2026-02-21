@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8001:8000"
+    environment:
+      - MONGO_URI=mongodb://admin:tradingagents123@mongodb:27017/
+      - MONGO_DB=stockai
+      - DEEPSEEK_API_KEY=sk-fb25bfaea4614d32b89cead05c8293c0
+    depends_on:
+      - mongodb
+    dns:
+      - 8.8.8.8
+      - 114.114.114.114
+
+  mongodb:
+    image: mongo:4.4
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: tradingagents123
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "3001:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend

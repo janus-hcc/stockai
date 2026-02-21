@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>StockAI - 测试登录</title>
+</head>
+<body>
+    <h2>StockAI 登录测试</h2>
+    <input id="username" placeholder="用户名" value="testuser"><br><br>
+    <input id="password" placeholder="密码" value="test123"><br><br>
+    <button onclick="doLogin()">登录</button>
+    <p id="msg"></p>
+    
+    <script>
+        var API = 'http://127.0.0.1:8001';
+        
+        function doLogin() {
+            var u = document.getElementById('username').value;
+            var p = document.getElementById('password').value;
+            var msg = document.getElementById('msg');
+            msg.textContent = '正在登录...';
+            
+            console.log('Sending to:', API + '/api/auth/login');
+            
+            fetch(API + '/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            })
+            .then(function(res) {
+                console.log('Response status:', res.status);
+                return res.json();
+            })
+            .then(function(data) {
+                console.log('Response data:', data);
+                msg.textContent = JSON.stringify(data);
+            })
+            .catch(function(e) {
+                msg.textContent = '错误: ' + e;
+            });
+        }
+    </script>
+</body>
+</html>

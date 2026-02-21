@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockAI - 智能股票分析平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/element-plus/dist/index.full.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue@2.4.0/dist/index.iife.min.js">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        
+        /* Header */
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 0; position: sticky; top: 0; z-index: 100; }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; }
+        .logo { font-size: 24px; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav { display: flex; gap: 8px; }
+        .nav-btn { padding: 8px 16px; background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; border-radius: 6px; transition: all 0.3s; }
+        .nav-btn:hover, .nav-btn.active { background: rgba(255,255,255,0.1); color: white; }
+        
+        /* Main */
+        .main { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        
+        /* Cards */
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .stat-label { color: #666; font-size: 14px; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #333; margin-top: 4px; }
+        .stat-value.green { color: #52c41a; }
+        .stat-value.red { color: #ff4d4f; }
+        
+        /* Search */
+        .search-box { display: flex; gap: 12px; margin-bottom: 20px; }
+        .search-input { flex: 1; padding: 12px 16px; border: 2px solid #eee; border-radius: 8px; font-size: 15px; transition: border-color 0.3s; }
+        .search-input:focus { outline: none; border-color: #667eea; }
+        
+        /* Stock List */
+        .stock-list { max-height: 500px; overflow-y: auto; }
+        .stock-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s; }
+        .stock-item:hover { background: #f9f9f9; }
+        .stock-info { flex: 1; }
+        .stock-name { font-weight: 500; }
+        .stock-code { color: #999; font-size: 13px; }
+        .stock-price { text-align: right; }
+        .price { font-size: 16px; font-weight: 500; }
+        .change { font-size: 13px; }
+        .change.up { color: #52c41a; }
+        .change.down { color: #ff4d4f; }
+        
+        /* Analysis */
+        .analysis-section { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .quote-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 12px; padding: 24px; }
+        .quote-name { font-size: 24px; font-weight: bold; }
+        .quote-price { font-size: 36px; font-weight: bold; margin: 16px 0; }
+        .quote-change { font-size: 18px; }
+        
+        .result-box { background: #f8f9fa; padding: 20px; border-radius: 8px; white-space: pre-wrap; line-height: 1.8; font-size: 14px; max-height: 600px; overflow-y: auto; }
+        
+        /* Buttons */
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        .btn-danger { background: #ff4d4f; color: white; }
+        
+        /* Auth */
+        .auth-container { max-width: 400px; margin: 80px auto; }
+        .auth-card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .auth-title { text-align: center; font-size: 24px; margin-bottom: 32px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        
+        /* Plans */
+        .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .plan-card { background: white; border-radius: 12px; padding: 32px; text-align: center; border: 2px solid #eee; transition: all 0.3s; }
+        .plan-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
+        .plan-card.recommended { border-color: #667eea; position: relative; }
+        .plan-card.recommended::before { content: '最受欢迎'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #667eea; color: white; padding: 4px 16px; border-radius: 12px; font-size: 12px; }
+        .plan-name { font-size: 20px; font-weight: bold; margin-bottom: 12px; }
+        .plan-price { font-size: 36px; font-weight: bold; color: #667eea; margin-bottom: 20px; }
+        .plan-price span { font-size: 14px; color: #999; }
+        .plan-features { list-style: none; text-align: left; margin: 20px 0; }
+        .plan-features li { padding: 8px 0; color: #666; }
+        .plan-features li::before { content: '✓'; color: #52c41a; margin-right: 8px; }
+        
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px; }
+        .tab { padding: 12px 24px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .tab.active { border-bottom-color: #667eea; color: #667eea; font-weight: 500; }
+        
+        /* Favorites */
+        .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; }
+        
+        /* Loading */
+        .loading { text-align: center; padding: 60px; color: #999; }
+        
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak>
+        <!-- Header -->
+        <div class="header" v-if="isLoggedIn">
+            <div class="header-content">
+                <div class="logo">📈 StockAI</div>
+                <div class="nav">
+                    <button class="nav-btn" :class="{active: currentPage==='analyze'}" @click="currentPage='analyze'">股票分析</button>
+                    <button class="nav-btn" :class="{active: currentPage==='stocks'}" @click="currentPage='stocks'">股票池</button>
+                    <button class="nav-btn" :class="{active: currentPage==='favorites'}" @click="currentPage='favorites'">自选股</button>
+                    <button class="nav-btn" :class="{active: currentPage==='history'}" @click="currentPage='history'">历史</button>
+                    <button class="nav-btn" :class="{active: currentPage==='membership'}" @click="currentPage='membership'">会员</button>
+                    <button class="nav-btn" @click="logout">退出</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main">
+            <!-- Login -->
+            <div v-if="!isLoggedIn && currentPage==='login'" class="auth-container">
+                <div class="auth-card">
+                    <h2 class="auth-title">登录 StockAI</h2>
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input v-model="loginForm.username" placeholder="请输入用户名" @keyup.enter="login">
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" v-model="loginForm.password" placeholder="请输入密码" @keyup.enter="login">
+                    </div>
+                    <button class="btn btn-primary" style="width:100%" @click="login">登录</button>
+                    <p style="text-align:center;margin-top:20px">
+                        还没有账号？<a @click="currentPage='register'" style="color:#667eea;cursor:pointer">立即注册</a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Register -->
+            <div v-if="!isLoggedIn && currentPage==='register'" class="auth-container">
+                <div class="auth-card">
+                    <h2 class="auth-title">注册 StockAI</h2>
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input v-model="registerForm.username" placeholder="请输入用户名">
+                    </div>
+                    <div class="form-group">
+                        <label>邮箱</label>
+                        <input v-model="registerForm.email" placeholder="请输入邮箱">
+                    </div>
+                    <div class="form-group">
+                        <label>验证码</label>
+                        <div style="display:flex;gap:8px">
+                            <input v-model="registerForm.code" placeholder="验证码" style="flex:1">
+                            <button class="btn btn-secondary" @click="sendCode" :disabled="countdown>0">{{countdown>0?countdown+'s':'获取验证码'}}</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" v-model="registerForm.password" placeholder="请输入密码">
+                    </div>
+                    <button class="btn btn-primary" style="width:100%" @click="register">注册</button>
+                    <p style="text-align:center;margin-top:20px">
+                        已有账号？<a @click="currentPage='login'" style="color:#667eea;cursor:pointer">立即登录</a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Analyze Page -->
+            <div v-if="isLoggedIn && currentPage==='analyze'">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-label">会员等级</div>
+                        <div class="stat-value">{{membership.level==='free'?'免费用户':membership.level.toUpperCase()+'会员'}}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">今日已用</div>
+                        <div class="stat-value">{{membership.used_today}} / {{membership.daily_limit===-1?'∞':membership.daily_limit}}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">剩余次数</div>
+                        <div class="stat-value" :class="remainingClass">{{remainingText}}</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">🔍 AI 股票分析</div>
+                    <div class="search-box">
+                        <input class="search-input" v-model="stockSymbol" placeholder="输入股票代码，如 000001、600519" @keyup.enter="analyze">
+                        <button class="btn btn-primary" @click="analyze" :disabled="analyzing">{{analyzing?'分析中...':'开始分析'}}</button>
+                    </div>
+                    
+                    <div v-if="quote" class="quote-card" style="margin-bottom:20px">
+                        <div class="quote-name">{{quote.name}} ({{quote.symbol}})</div>
+                        <div class="quote-price">¥{{quote.price}}</div>
+                        <div class="quote-change">{{quote.change>=0?'+':''}}{{quote.change}} ({{quote.change_pct}}%)</div>
+                    </div>
+                    
+                    <div v-if="analysisResult" class="result-box" style="max-height:none;white-space:pre-wrap;line-height:1.8;font-size:14px">
+                        <div style="font-size:16px;font-weight:bold;margin-bottom:16px;border-bottom:2px solid #667eea;padding-bottom:12px">
+                            📊 {{stockSymbol}} 全面分析报告
+                        </div>
+                        <div v-html="formatAnalysis(analysisResult)"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stocks Page -->
+            <div v-if="isLoggedIn && currentPage==='stocks'">
+                <div class="card">
+                    <div class="card-title">📊 股票池</div>
+                    
+                    <!-- 市场选择标签 -->
+                    <div class="tabs" style="margin-bottom:16px">
+                        <div class="tab" :class="{active:currentMarket==='a'}" @click="switchMarket('a')">A股</div>
+                        <div class="tab" :class="{active:currentMarket==='hk'}" @click="switchMarket('hk')">港股</div>
+                        <div class="tab" :class="{active:currentMarket==='us'}" @click="switchMarket('us')">美股</div>
+                    </div>
+                    
+                    <div class="search-box">
+                        <input class="search-input" v-model="searchKeyword" placeholder="搜索股票代码或名称" @input="searchStocks">
+                        <button class="btn btn-secondary" @click="loadStocks(1, currentMarket)">刷新</button>
+                    </div>
+                    <div style="margin-bottom:10px;color:#666;font-size:13px">
+                        共 {{stocks.length}} 只股票 (实时数据)
+                    </div>
+                    <div class="stock-list" style="max-height:600px">
+                        <div v-for="stock in stocks" :key="stock.code" class="stock-item" @click="selectStock(stock)">
+                            <div class="stock-info">
+                                <div class="stock-name">{{stock.name}}</div>
+                                <div class="stock-code">{{stock.code}}</div>
+                            </div>
+                            <div class="stock-price">
+                                <div class="price">¥{{stock.price||'-'}}</div>
+                                <div class="change" :class="stock.change>=0?'up':'down'">{{stock.change?(stock.change>0?'+':'')+stock.change+'%':'-'}}</div>
+                            </div>
+                            <button class="btn btn-secondary" style="margin-left:12px;padding:6px 12px;font-size:12px" @click.stop="addFavorite(stock.code, stock.name)">+自选</button>
+                        </div>
+                    </div>
+                    <div style="text-align:center;margin-top:16px">
+                        <button class="btn btn-secondary" @click="loadStocks(stockPage+1)">加载更多</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Favorites Page -->
+            <div v-if="isLoggedIn && currentPage==='favorites'">
+                <div class="card">
+                    <div class="card-title">⭐ 我的自选股</div>
+                    <div v-if="favorites.length===0" class="loading">暂无自选股，去股票池添加</div>
+                    <div v-for="fav in favorites" :key="fav._id" class="fav-item">
+                        <div>
+                            <div style="font-weight:500">{{fav.name}}</div>
+                            <div style="color:#999;font-size:13px">{{fav.symbol}}</div>
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <button class="btn btn-primary" @click="stockSymbol=fav.symbol;currentPage='analyze'">分析</button>
+                            <button class="btn btn-danger" @click="removeFavorite(fav.symbol)">删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- History Page -->
+            <div v-if="isLoggedIn && currentPage==='history'">
+                <div class="card">
+                    <div class="card-title">📜 分析历史</div>
+                    <div v-if="history.length===0" class="loading">暂无分析记录</div>
+                    <div v-for="item in history" :key="item._id" class="card" style="margin-bottom:12px">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                            <span style="font-weight:bold;color:#667eea">{{item.symbol}}</span>
+                            <span style="color:#999;font-size:13px">{{item.created_at}}</span>
+                        </div>
+                        <div style="color:#666;font-size:14px;white-space:pre-wrap">{{item.analysis.substring(0,200)}}...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Membership Page -->
+            <div v-if="isLoggedIn && currentPage==='membership'">
+                <div class="card">
+                    <div class="card-title">💎 会员中心</div>
+                    <div class="stats" style="margin-bottom:32px">
+                        <div class="stat-card">
+                            <div class="stat-label">当前等级</div>
+                            <div class="stat-value">{{membership.level==='free'?'免费用户':membership.level.toUpperCase()+'会员'}}</div>
+                        </div>
+                        <div class="stat-card" v-if="membership.expire_at">
+                            <div class="stat-label">到期时间</div>
+                            <div class="stat-value" style="font-size:20px">{{membership.expire_at}}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="plans">
+                        <div v-for="plan in plans" :key="plan.id" class="plan-card" :class="{recommended:plan.recommended}">
+                            <div class="plan-name">{{plan.name}}</div>
+                            <div class="plan-price">¥{{plan.price}}<span>/月</span></div>
+                            <ul class="plan-features">
+                                <li v-for="f in plan.features" :key="f">{{f}}</li>
+                            </ul>
+                            <button v-if="membership.level===plan.id" class="btn btn-secondary" disabled>当前套餐</button>
+                            <button v-else class="btn btn-primary" style="width:100%" @click="upgrade(plan.id)">{{plan.price===0?'免费':'立即升级'}}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+        
+        const app = createApp({
+            setup() {
+                const API = 'http://localhost:8001/api';
+                const currentPage = ref('login');
+                const isLoggedIn = ref(false);
+                const token = ref(localStorage.getItem('token')||'');
+                
+                const loginForm = ref({username:'',password:''});
+                const registerForm = ref({username:'',email:'',code:'',password:''});
+                const countdown = ref(0);
+                
+                const membership = ref({level:'free',daily_limit:3,used_today:0,expire_at:null});
+                const plans = ref([]);
+                
+                const stockSymbol = ref('');
+                const analyzing = ref(false);
+                const analysisResult = ref('');
+                const quote = ref(null);
+                
+                const stocks = ref([]);
+                const stockPage = ref(1);
+                const currentMarket = ref('a');  // a=A股, hk=港股, us=美股
+                const searchKeyword = ref('');
+                const favorites = ref([]);
+                const history = ref([]);
+                
+                const remainingText = computed(() => membership.value.daily_limit===-1?'无限':Math.max(0,membership.value.daily_limit-membership.value.used_today));
+                const remainingClass = computed(() => remainingText.value==='无限'?'green':remainingText.value<=1?'red':'');
+                
+                const api = async (url, options={}) => {
+                    const headers = {'Content-Type':'application/json'};
+                    if(token.value) headers['Authorization']=`Bearer ${token.value}`;
+                    const res = await fetch(url, {...options,headers});
+                    return res.json();
+                };
+                
+                const formatAnalysis = (text) => {
+                    if(!text) return '';
+                    // Convert markdown-like format to HTML
+                    let html = text
+                        .replace(/^### (.+)$/gm, '<h3 style="color:#667eea;margin:20px 0 10px;font-size:16px">$1</h3>')
+                        .replace(/^## (.+)$/gm, '<h2 style="color:#667eea;margin:24px 0 12px;font-size:18px;border-bottom:1px solid #eee;padding-bottom:8px">$1</h2>')
+                        .replace(/^\* (.+)$/gm, '<li style="margin:4px 0">$1</li>')
+                        .replace(/^- (.+)$/gm, '<li style="margin:4px 0">$1</li>')
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                        .replace(/\n\n/g, '</p><p style="margin:8px 0">')
+                        .replace(/^---\s*$/gm, '<hr style="border:none;border-top:1px dashed #ddd;margin:20px 0">');
+                    
+                    // Wrap list items
+                    html = html.replace(/(<li[^>]*>.*?<\/li>)+/g, '<ul style="margin:8px 0;padding-left:20px">$&</ul>');
+                    
+                    return html;
+                };
+                
+                const login = async () => {
+                    const res = await api(`${API}/auth/login`,{method:'POST',body:JSON.stringify(loginForm.value)});
+                    if(res.success){
+                        token.value = res.data.access_token;
+                        localStorage.setItem('token',token.value);
+                        isLoggedIn.value = true;
+                        currentPage.value = 'analyze';
+                        await loadMembership();
+                        await loadPlans();
+                    }else alert(res.detail||'登录失败');
+                };
+                
+                const logout = () => {
+                    token.value = '';
+                    localStorage.removeItem('token');
+                    isLoggedIn.value = false;
+                    currentPage.value = 'login';
+                };
+                
+                const sendCode = async () => {
+                    if(!registerForm.value.email) return alert('请输入邮箱');
+                    const res = await api(`${API}/auth/send-code`,{method:'POST',body:JSON.stringify({email:registerForm.value.email})});
+                    if(res.success){ countdown.value=60; const t=setInterval(()=>{countdown.value--;if(countdown.value<=0)clearInterval(t)},1000); }
+                };
+                
+                const register = async () => {
+                    const res = await api(`${API}/auth/register`,{method:'POST',body:JSON.stringify(registerForm.value)});
+                    if(res.success){alert('注册成功，请登录');currentPage.value='login';}
+                    else alert(res.detail||'注册失败');
+                };
+                
+                const loadMembership = async () => {
+                    const res = await api(`${API}/membership/info`);
+                    if(res.success) membership.value = res.data;
+                };
+                
+                const loadPlans = async () => {
+                    const res = await api(`${API}/membership/plans`);
+                    if(res.success) plans.value = res.data;
+                };
+                
+                const loadStocks = async () => {
+                    const res = await api(`${API}/stocks/list?market=0`);
+                    if(res.success) stocks.value = res.data;
+                };
+                
+                const searchStocks = async () => {
+                    if(!searchKeyword.value){ loadStocks(); return; }
+                    const res = await api(`${API}/stocks/search?q=${searchKeyword.value}`);
+                    if(res.success) stocks.value = res.data;
+                };
+                
+                const loadStocks = async (page = 1, market = currentMarket.value) => {
+                    const res = await api(`${API}/stocks/list?market=${market}&page=${page}&size=100`);
+                    if(res.success) {
+                        if(page === 1) {
+                            stocks.value = res.data;
+                        } else {
+                            stocks.value = [...stocks.value, ...res.data];
+                        }
+                    }
+                };
+                
+                const switchMarket = async (market) => {
+                    currentMarket.value = market;
+                    stockPage.value = 1;
+                    await loadStocks(1, market);
+                };
+                
+                const selectStock = async (stock) => {
+                    stockSymbol.value = stock.code;
+                    currentPage.value = 'analyze';
+                    // 直接使用股票数据中的行情
+                    quote.value = {
+                        symbol: stock.code,
+                        name: stock.name,
+                        price: stock.price,
+                        change: stock.change,
+                        change_pct: stock.change
+                    };
+                };
+                
+                const analyze = async () => {
+                    if(!stockSymbol.value) return;
+                    analyzing.value = true; analysisResult.value = '';
+                    
+                    // 获取实时行情
+                    const q = await api(`${API}/stocks/quote/${stockSymbol.value}`);
+                    if(q.success) quote.value = q.data;
+                    
+                    const res = await api(`${API}/analysis/analyze`,{method:'POST',body:JSON.stringify({symbol:stockSymbol.value})});
+                    analyzing.value = false;
+                    if(res.success){
+                        analysisResult.value = res.data.analysis;
+                        membership.value.used_today = res.data.used_today;
+                        await loadHistory();
+                    }else alert(res.detail||'分析失败');
+                };
+                
+                const loadFavorites = async () => {
+                    const res = await api(`${API}/stocks/favorites`);
+                    if(res.success) favorites.value = res.data;
+                };
+                
+                const addFavorite = async (symbol,name) => {
+                    const res = await api(`${API}/stocks/favorite`,{method:'POST',body:JSON.stringify({symbol,name})});
+                    if(res.success){ alert('添加成功'); loadFavorites(); }
+                    else alert(res.message||'添加失败');
+                };
+                
+                const removeFavorite = async (symbol) => {
+                    const res = await api(`${API}/stocks/favorite/${symbol}`,{method:'DELETE'});
+                    if(res.success){ alert('删除成功'); loadFavorites(); }
+                };
+                
+                const loadHistory = async () => {
+                    const res = await api(`${API}/analysis/history`);
+                    if(res.success) history.value = res.data;
+                };
+                
+                const upgrade = async (level) => {
+                    const res = await api(`${API}/membership/upgrade?level=${level}`,{method:'POST'});
+                    if(res.success){alert(res.message);loadMembership();}
+                    else alert(res.detail||'升级失败');
+                };
+                
+                onMounted(async () => {
+                    if(token.value){
+                        try{
+                            await loadMembership();
+                            await loadPlans();
+                            await loadStocks();
+                            await loadFavorites();
+                            await loadHistory();
+                            isLoggedIn.value = true;
+                            currentPage.value = 'analyze';
+                        }catch(e){ logout(); }
+                    }else{ await loadPlans(); }
+                });
+                
+                return {
+                    currentPage, isLoggedIn, loginForm, registerForm, countdown,
+                    membership, plans, stockSymbol, analyzing, analysisResult, quote,
+                    stocks, stockPage, currentMarket, searchKeyword, favorites, history, remainingText, remainingClass,
+                    login, logout, sendCode, register, loadMembership, loadPlans,
+                    loadStocks, searchStocks, selectStock, analyze,
+                    loadFavorites, addFavorite, removeFavorite, loadHistory, upgrade, formatAnalysis
+                };
+            }
+        });
+        app.use(ElementPlus);
+        app.mount('#app');
+    </script>
+</body>
+</html>
