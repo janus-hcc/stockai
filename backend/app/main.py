@@ -44,7 +44,7 @@ app.include_router(stocks.router, prefix="/api/stocks", tags=["股票"])
 
 @app.get("/")
 def root():
-    return {"message": "StockAI API", "version": "1.0.0"}
+    return FileResponse("html/v6.html")
 
 @app.get("/health")
 def health():
